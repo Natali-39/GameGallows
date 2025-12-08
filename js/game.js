@@ -1,5 +1,18 @@
+let state = JSON.parse(window.localStorage.getItem('state'));
+
+
+if(!state){
+    state = {
+        topicIndex: null,
+        wordIndex: null,
+    }
+}
+
+
 let currentWord = null;
 let wordLetters = [];
+let errorScore = 0;
+let successScore = 0;
 
 const alphabet = 'абвгдеёжзиклмнопрстуфхцчшщьыъэюя';
 const topics = ["Города", "Транспорт", "Спорт"];
@@ -7,7 +20,7 @@ const topics = ["Города", "Транспорт", "Спорт"];
 const words = {
     "Города": ["минск", "москва", "париж", "варшава"],
     "Транспорт": ["автомобиль", "трамвай", "самолет", "телега"],
-    "Спорт": ["футбол", "теннис", "керлинг", "шахматы"]
+    "Спорт": ["футбол", "теннис", "кёрлинг", "шахматы"]
 }
 
 const gameElements = {
@@ -26,11 +39,10 @@ const gameElements = {
 
 }
 
-
 function init() {
-    let topicIndex = rand(0, topics.length -1);
+    let topicIndex = state.topicIndex !== null ? state.topicIndex : rand(0, topics.length -1);
     let wordsSet = words[topics[topicIndex]];
-    let wordIndex = rand(0, wordsSet.length -1);
+    let wordIndex = state.wordIndex !== null ? state.wordIndex : rand(0, wordsSet.length -1);
 
     currentWord = wordsSet[wordIndex];
 
@@ -57,11 +69,24 @@ function init() {
 
         button.onclick = () => {
             checkLetter(alphabet[i]);
+            //button.disabled = true;
+            button.onclick = null;
+            button.classList.add("pushON");
         }
 
         gameElements.letters.append(button);
     }
+
 }
+
+function* showHungmanPartGenerate() {
+    for(let i = 0; i < gameElements.hungman.length; i++){
+        gameElements.hungman[i].style.display = `block`;
+        yield;
+    }
+}
+
+let showHungmanPart = showHungmanPartGenerate();
 
 function checkLetter(letter){
     let pos = 0;
@@ -78,16 +103,32 @@ function checkLetter(letter){
         pos = foundPos +1;
     }
 
-    if(indexes){
-        //отображаем буквы
+    if(indexes.length > 0){
+        for(let index of indexes){
+            wordLetters[index].element.innerText = wordLetters[index].letter; successScore++;
+        }
 
+        if(successScore == currentWord.length){
+            gameOver('Вы выиграли!!!!');
+        }
     } else {
-        showHungmanPart();
+        showHungmanPart.next();
+        errorScore++;
+
+        if(errorScore >= gameElements.hungman.length) {
+            gameOver('Вы проиграли!!!');
+        }
     }
 }
 
-function showHungmanPart() {
-    
+function gameOver(message){
+    let gameOver = document.querySelector('.game-over');
+    gameOver.innerText = message;
+    gameOver.classList.add('active');
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 3000);
 }
 
 function rand(min, max){
@@ -98,3 +139,4 @@ function rand(min, max){
 }
 
 init();
+
